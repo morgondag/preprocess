@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>ogg-to-json</title>
+	<style>
+		body{
+			font-family: "Lucida Console", Monaco, monospace
+		}
+		label{
+			display: inline-block;
+			width: 250px;
+		}
+		span{
+			font-size: 12px;
+			font-style: italic
+		}
+	</style>
+</head>
+<body>
+	<h4>Ogg-to-json audio bitrate preprocessor</h4>
+	<form action="" id="recorder">
+		<p>
+			<label for="samplesRate">samplesRate:</label>
+			<input type="number" name="samplesRate" id="samplesRate" min="1" max="512" value="256">
+			<span>Audio sample rate</span>
+		</p>
+		<p>
+			<label for="sampler">sampler size:</label>
+			<input type="number" name="sampler" id="sampler" min="1" max="512" value="256">
+			<span>Array length per sample</span>
+		</p>
+		<p>
+			<label for="filer">ogg file:</label>
+			<input type="file" id="filer" name="filer" accept="audio/ogg">
+			<span>Audio file</span>
+		</p>
+		<p>
+			<label for="savefile">save json as...</label>
+			<input type="file" nwsaveas="recording.json" id="savefile" name="savefile" accept="application/json" />
+			<span>Json output file</span>
+		</p>
+		<p>
+			<input type="submit" value="Record" id="btn">
+		</p>
+	</form>
+	<input type="text" id="deltafield" value="setup" readonly>
+
+	<progress max=100 value="0" id="progresser"></progress>
+
+	<script>
+		var fs = require('fs')
+		var samplesRate,sampler,file,progresse,savefile;
+
+
+		document.addEventListener("DOMContentLoaded", function() {
+			progresser = document.getElementById('progresser');
+
+
+			document.getElementById('btn').addEventListener('click', function(e, t) {
+				e.preventDefault();
+				samplesRate = document.getElementById('samplesRate').value;
+				sampler = document.getElementById('sampler').value;
+				file = document.getElementById('filer').value;
+
+				loadSound(file);
+
+			});
+
+			document.getElementById('filer').addEventListener('change', function(e) {
+				file = this.value;
+			},false)
+
+			document.getElementById('savefile').addEventListener('change', function(e) {
+				savefile = this.value;
+				console.log(savefile)
+			},false)
+
+		});
+
+		var now,deltaTime,then;
+		var deltainput = document.getElementById('deltafield');
+
+		function loop(){
+			window.requestAnimationFrame(loop);
+			now = Date.now();
+			deltaTime = (now - then) / 1000;
+			then = now;
+
+			if(record){
+				progression();
+				beatData = new Uint8Array(sampler);
+				fft.getByteFrequencyData(beatData);
+				recordedData.push(beatData)
+			}
+		}
+
+		var record = false;
+		var contexts;
+		var req;
+		var buffer;
+		var beat;
+		var fft;
+		var beatData;
+		var recordedData = [];
+
+
+		function loadSound(song){
+			contexts = new webkitAudioContext();
+			req = new XMLHttpRequest();
+			req.open("GET", song, true);
+			req.responseType = "arraybuffer";
+
+			req.onload = function() {
+				contexts.decodeAudioData(req.response, function(buffer) {
+					buffer = buffer;
+					beat = contexts.createBufferSource();
+					beat.buffer = buffer;
+					fft = contexts.createAnalyser();
+					fft.fftSize = samplesRate;
+					beat.connect(fft);
+					fft.connect(contexts.destination);
+
+					beat.onended = function(){
+						console.log('done!')
+						record = false;
+						progresser.value = 100;
+						deltainput.value = 'saving...'
+						saveData()
+					}
+
+					record = true;
+					beat.noteOn(0);
+					loop();
+				});
+			};
+			req.send();
+		}
+
+		function progression(){
+			deltainput.value = 'recording: ' + Math.round((fft.context.currentTime/beat.buffer.duration)*100)+'%'
+			progresser.value = (fft.context.currentTime/beat.buffer.duration)*100
+		}
+
+
+		function saveData(){
+			fs.writeFile(savefile,JSON.stringify(recordedData),function(err){
+				if(err){
+					console.log('error!')
+				}
+				console.log('done!')
+				deltainput.value = 'finished!'
+				progresser.value = 0;
+			});
+		}
+
+	</script>
+
+</body>
+</html>
