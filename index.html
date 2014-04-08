@@ -83,16 +83,15 @@
 
 		function loop(){
 			window.requestAnimationFrame(loop);
+			if(record){
+				beatData = new Uint8Array(sampler);
+				fft.getByteFrequencyData(beatData)
+				recordedData[roundToTwo(fft.context.currentTime)] = Array.apply( [], beatData )
+				progression();
+			}
 			now = Date.now();
 			deltaTime = (now - then) / 1000;
 			then = now;
-
-			if(record){
-				progression();
-				beatData = new Uint8Array(sampler);
-				fft.getByteFrequencyData(beatData);
-				recordedData.push(beatData)
-			}
 		}
 
 		var record = false;
@@ -102,8 +101,11 @@
 		var beat;
 		var fft;
 		var beatData;
-		var recordedData = [];
+		var recordedData = {};
 
+		function roundToTwo(num) {
+		    return +(Math.round(num + "e+2")  + "e-2");
+		}
 
 		function loadSound(song){
 			contexts = new webkitAudioContext();

@@ -10,3 +10,5 @@ nw.pak
 *.ogg
 node-webkit.app/*
 recording.json
+*.json
+!package.json
