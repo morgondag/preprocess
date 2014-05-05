@@ -146,6 +146,32 @@
 
 
 		function saveData(){
+
+			var avrangePerSample = [];
+			var records = 0;
+			for(key in recordedData){
+				var total = 0;
+				records += 1;
+				for (var i = 0; i < recordedData[key].length; i++) {
+					if(typeof avrangePerSample[i] == 'undefined'){
+						avrangePerSample[i] = 0
+					} else {
+						avrangePerSample[i] += recordedData[key][i]
+					}
+
+					total+= recordedData[key][i]
+				}
+				recordedData[key].unshift(total)
+			}
+
+			for (var i = 0; i < avrangePerSample.length; i++) {
+				avrangePerSample[i] = avrangePerSample[i] / records;
+			};
+
+
+			recordedData['sampleRate'] = sampler
+			recordedData['avrangePerSample'] = avrangePerSample;
+
 			fs.writeFile(savefile,JSON.stringify(recordedData),function(err){
 				if(err){
 					console.log('error!')
