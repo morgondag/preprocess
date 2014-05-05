@@ -149,8 +149,11 @@
 
 			var avrangePerSample = [];
 			var records = 0;
+			var total = 0;
+
 			for(key in recordedData){
-				var total = 0;
+				var totalPerBeat = 0;
+
 				records += 1;
 				for (var i = 0; i < recordedData[key].length; i++) {
 					if(typeof avrangePerSample[i] == 'undefined'){
@@ -159,17 +162,19 @@
 						avrangePerSample[i] += recordedData[key][i]
 					}
 
-					total+= recordedData[key][i]
+					totalPerBeat+= recordedData[key][i]
 				}
-				recordedData[key].unshift(total)
+				total += totalPerBeat
+				recordedData[key].unshift(totalPerBeat)
 			}
 
 			for (var i = 0; i < avrangePerSample.length; i++) {
-				avrangePerSample[i] = avrangePerSample[i] / records;
+				avrangePerSample[i] = Math.round(avrangePerSample[i] / records);
 			};
 
 
 			recordedData['sampleRate'] = sampler
+			recordedData['avrangeTotal'] = Math.round(total/records)
 			recordedData['avrangePerSample'] = avrangePerSample;
 
 			fs.writeFile(savefile,JSON.stringify(recordedData),function(err){
